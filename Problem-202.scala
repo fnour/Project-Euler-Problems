@@ -1,7 +1,31 @@
+def solutionsCounts(exactBounces: Long): Long = {
+  val max = ((exactBounces + 3) / 2) - 2
+  val numElements = (max - 2) / 3 + 1
+  val uniqueDivisors: List[Long] = primeDivisors(max + 2).distinct
+
+  val combinations = (1 to uniqueDivisors.size).map { k =>
+    uniqueDivisors
+      .combinations(k)
+      .map(_.product)
+  }.map(_.toList)
+  val zd = combinations.map{ list =>
+    list.map(k => numOfDivisorsInASequence(exactBounces, k)).sum
+  }
+  val positives = zd.sliding(1,2).flatten.sum
+  val negatives = zd.drop(1).sliding(1,2).flatten.sum
+
+  numElements - (positives - negatives)
+}
+
+assert(solutionsCounts(11) == 2)
+assert(solutionsCounts(1000001) == 80840)
+assert(solutionsCounts(12017639147L) == 1209002624)
+
+
 def numOfDivisorsInASequence(exactBounces: Long, k: Long): Long = {
   val max = (exactBounces + 3) / 2 - 2
   val numElements = (max - 2) / 3 + 1
-  
+
   val indexOfFirstOccurrence = k % 3 match {
     case 0 => numElements + 2
     case 1 => (2 * k - 2) / 3 + 1
@@ -27,20 +51,27 @@ assert(numOfDivisorsInASequence(1000001, 106) == 1572)
 assert(numOfDivisorsInASequence(1000001, 178) == 936)
 assert(numOfDivisorsInASequence(1000001, 500001) == 0)
 
-def solutionsCounts(exactBounces: Long, primeDivisors: List[Int]): Long = {
-  val max = ((exactBounces + 3) / 2) - 2
-  val numElements = (max - 2) / 3 + 1
 
-  val combinations = (1 to primeDivisors.size).map { k =>
-    primeDivisors
-      .combinations(k)
-      .map(_.product)
-  }.map(_.toList)
-  val zd = combinations.map{ list =>
-    list.map(k => numOfDivisorsInASequence(exactBounces, k)).sum
+import scala.annotation.tailrec
+def primeDivisors(num: Long): List[Long] = {
+  require(num > 1, "Error: input a number larger than 1")
+  @tailrec
+  def primeDivisorsHelper(n: Long, div: List[Long]): List[Long] = {
+    if (div.product < num) {
+      Stream.from(2).find(n % _ == 0) match {
+        case Some(nextDivisor) => primeDivisorsHelper(n / nextDivisor, div :+ nextDivisor.toLong)
+      }
+    } else {
+      div
+    }
   }
-  val positives = zd.sliding(1,2).flatten.sum
-  val negatives = zd.drop(1).sliding(1,2).flatten.sum
 
-  numElements - (positives - negatives)
+  primeDivisorsHelper(num, List.empty[Long])
 }
+
+assert(primeDivisors(2) == List(2))
+assert(primeDivisors(25) == List(5,5))
+assert(primeDivisors(255) == List(3,5,17))
+assert(primeDivisors(500002) == List(2,53,53,89))
+assert(primeDivisors(6008819575L) == List(5,5,11,17,23,29,41,47))
+
